@@ -34,3 +34,7 @@ qdrant_storage/
 
 # Test coverage
 coverage/
+
+# Local documentation files
+MCPguide.txt
+MCPspecification.txt
