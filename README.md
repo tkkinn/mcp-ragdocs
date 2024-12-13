@@ -1,70 +1,135 @@
-# mcp-ragdocs MCP Server
+# mcp-server-ragdocs
 
-A Model Context Protocol server for fetching and storing documentation in a vector database, enabling semantic search and retrieval to augment LLM capabilities with relevant documentation context.
-
-This is a TypeScript-based MCP server that implements a simple notes system. It demonstrates core MCP concepts by providing:
-
-- Resources representing text notes with URIs and metadata
-- Tools for creating new notes
-- Prompts for generating summaries of notes
+A Model Context Protocol (MCP) server that enables semantic search and retrieval of documentation using a vector database (Qdrant). This server allows you to add documentation from URLs or local files and then search through them using natural language queries.
 
 ## Features
 
-### Resources
-- List and access notes via `note://` URIs
-- Each note has a title, content and metadata
-- Plain text mime type for simple content access
-
-### Tools
-- `create_note` - Create new text notes
-  - Takes title and content as required parameters
-  - Stores note in server state
-
-### Prompts
-- `summarize_notes` - Generate a summary of all stored notes
-  - Includes all note contents as embedded resources
-  - Returns structured prompt for LLM summarization
-
-## Development
-
-Install dependencies:
-```bash
-npm install
-```
-
-Build the server:
-```bash
-npm run build
-```
-
-For development with auto-rebuild:
-```bash
-npm run watch
-```
+- Add documentation from URLs or local files
+- Store documentation in a vector database for semantic search
+- Search through documentation using natural language
+- List all documentation sources
 
 ## Installation
 
-To use with Claude Desktop, add the server config:
+You can use this server directly with `npx`:
 
-On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+```bash
+npx -y @qpd-v/mcp-server-ragdocs
+```
+
+Or install it globally:
+
+```bash
+npm install -g @qpd-v/mcp-server-ragdocs
+```
+
+## Requirements
+
+- Node.js 16 or higher
+- Qdrant running locally (see [Qdrant Installation](#qdrant-installation))
+- OpenAI API key for generating embeddings
+
+## Qdrant Installation
+
+1. Using Docker (recommended):
+```bash
+docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+```
+
+2. Or download from [Qdrant's website](https://qdrant.tech/documentation/quick-start/)
+
+## Configuration
+
+### Claude Desktop
+
+Add this to your Claude Desktop configuration file:
+
+Windows: `%AppData%\Claude\claude_desktop_config.json`
+macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
-    "mcp-ragdocs": {
-      "command": "/path/to/mcp-ragdocs/build/index.js"
+    "ragdocs": {
+      "command": "npx",
+      "args": ["-y", "@qpd-v/mcp-server-ragdocs"],
+      "env": {
+        "OPENAI_API_KEY": "your-openai-api-key",
+        "QDRANT_URL": "http://localhost:6333"
+      }
     }
   }
 }
 ```
 
-### Debugging
+### Environment Variables
 
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
+- `OPENAI_API_KEY` (required): Your OpenAI API key for generating embeddings
+- `QDRANT_URL` (optional): URL of your Qdrant instance (defaults to http://localhost:6333)
 
-```bash
-npm run inspector
+## Available Tools
+
+1. `add_documentation`
+   - Add documentation from a URL to the RAG database
+   - Parameters:
+     - `url`: URL of the documentation to fetch
+
+2. `search_documentation`
+   - Search through stored documentation
+   - Parameters:
+     - `query`: Search query
+     - `limit` (optional): Maximum number of results to return (default: 5)
+
+3. `list_sources`
+   - List all documentation sources currently stored
+   - No parameters required
+
+## Example Usage
+
+In Claude Desktop or any other MCP-compatible client:
+
+1. Add documentation:
+```
+Add this documentation: https://docs.example.com/api
 ```
 
-The Inspector will provide a URL to access debugging tools in your browser.
+2. Search documentation:
+```
+Search the documentation for information about authentication
+```
+
+3. List sources:
+```
+What documentation sources are available?
+```
+
+## Development
+
+1. Clone the repository:
+```bash
+git clone https://github.com/qpd-v/mcp-server-ragdocs.git
+cd mcp-server-ragdocs
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Build the project:
+```bash
+npm run build
+```
+
+4. Run locally:
+```bash
+npm start
+```
+
+## License
+
+MIT
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
