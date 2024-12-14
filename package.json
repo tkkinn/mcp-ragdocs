@@ -1,6 +1,6 @@
 {
   "name": "@qpd-v/mcp-server-ragdocs",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A Model Context Protocol server for fetching and storing documentation in a vector database, enabling semantic search and retrieval to augment LLM capabilities with relevant documentation context.",
   "private": false,
   "type": "module",

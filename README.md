@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that enables semantic search and retrieval
 
 ## Version
 
-Current version: 0.1.5
+Current version: 0.1.6
 
 ## Features
 
@@ -15,17 +15,13 @@ Current version: 0.1.5
 
 ## Installation
 
-You can use this server directly with `npx`:
-
-```bash
-npx -y @qpd-v/mcp-server-ragdocs
-```
-
-Or install it globally:
+Install globally using npm:
 
 ```bash
 npm install -g @qpd-v/mcp-server-ragdocs
 ```
+
+This will install the server in your global npm directory, which you'll need for the configuration steps below.
 
 ## Requirements
 
@@ -55,24 +51,21 @@ docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 
 ## Configuration
 
-### Claude Desktop
+The server can be used with both Cline and Claude Desktop. Configuration differs slightly between them:
 
-Add this to your Claude Desktop configuration file:
+### Cline Configuration
 
-Windows: `%AppData%\Claude\claude_desktop_config.json`
-macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+Add to your Cline settings file (`%AppData%\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\cline_mcp_settings.json`):
 
-#### Example Configurations
-
-1. Local Setup with Ollama (Default):
+1. Using npm global install (recommended):
 ```json
 {
-  "mcpServers": {
-    "ragdocs": {
-      "command": "npx",
-      "args": ["-y", "@qpd-v/mcp-server-ragdocs"],
+		"mcpServers": {
+				"ragdocs": {
+						"command": "node",
+      "args": ["C:/Users/YOUR_USERNAME/AppData/Roaming/npm/node_modules/@qpd-v/mcp-server-ragdocs/build/index.js"],
       "env": {
-        "QDRANT_URL": "http://localhost:6333",
+        "QDRANT_URL": "http://127.0.0.1:6333",
         "EMBEDDING_PROVIDER": "ollama",
         "OLLAMA_URL": "http://localhost:11434"
       }
@@ -81,15 +74,15 @@ macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 }
 ```
 
-2. Local Setup with OpenAI:
+For OpenAI instead of Ollama:
 ```json
 {
-  "mcpServers": {
-    "ragdocs": {
-      "command": "npx",
-      "args": ["-y", "@qpd-v/mcp-server-ragdocs"],
+		"mcpServers": {
+				"ragdocs": {
+						"command": "node",
+      "args": ["C:/Users/YOUR_USERNAME/AppData/Roaming/npm/node_modules/@qpd-v/mcp-server-ragdocs/build/index.js"],
       "env": {
-        "QDRANT_URL": "http://localhost:6333",
+        "QDRANT_URL": "http://127.0.0.1:6333",
         "EMBEDDING_PROVIDER": "openai",
         "OPENAI_API_KEY": "your-openai-api-key"
       }
@@ -98,21 +91,111 @@ macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 }
 ```
 
-3. Qdrant Cloud with OpenAI:
+2. Using local development setup:
+```json
+{
+		"mcpServers": {
+				"ragdocs": {
+						"command": "node",
+						"args": ["PATH_TO_PROJECT/mcp-ragdocs/build/index.js"],
+						"env": {
+								"QDRANT_URL": "http://127.0.0.1:6333",
+								"EMBEDDING_PROVIDER": "ollama",
+								"OLLAMA_URL": "http://localhost:11434"
+						}
+				}
+		}
+}
+```
+
+### Claude Desktop Configuration
+
+Add to your Claude Desktop config file:
+- Windows: `%AppData%\Claude\claude_desktop_config.json`
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+1. Windows Setup with Ollama (using full paths):
 ```json
 {
   "mcpServers": {
     "ragdocs": {
-      "command": "npx",
-      "args": ["-y", "@qpd-v/mcp-server-ragdocs"],
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\YOUR_USERNAME\\AppData\\Roaming\\npm\\node_modules\\@qpd-v/mcp-server-ragdocs\\build\\index.js"
+      ],
       "env": {
-        "QDRANT_URL": "https://your-cluster-url.qdrant.tech",
-        "QDRANT_API_KEY": "your-qdrant-api-key",
-        "EMBEDDING_PROVIDER": "openai",
-        "OPENAI_API_KEY": "your-openai-api-key"
-      }
-    }
-  }
+								"QDRANT_URL": "http://127.0.0.1:6333",
+								"EMBEDDING_PROVIDER": "ollama",
+								"OLLAMA_URL": "http://localhost:11434"
+						}
+				}
+		}
+}
+```
+
+Windows Setup with OpenAI:
+```json
+{
+		"mcpServers": {
+				"ragdocs": {
+						"command": "C:\\Program Files\\nodejs\\node.exe",
+						"args": [
+								"C:\\Users\\YOUR_USERNAME\\AppData\\Roaming\\npm\\node_modules\\@qpd-v/mcp-server-ragdocs\\build\\index.js"
+						],
+						"env": {
+								"QDRANT_URL": "http://127.0.0.1:6333",
+								"EMBEDDING_PROVIDER": "openai",
+								"OPENAI_API_KEY": "your-openai-api-key"
+						}
+				}
+		}
+}
+```
+
+2. macOS Setup with Ollama:
+```json
+{
+		"mcpServers": {
+				"ragdocs": {
+						"command": "/usr/local/bin/node",
+						"args": [
+								"/usr/local/lib/node_modules/@qpd-v/mcp-server-ragdocs/build/index.js"
+						],
+						"env": {
+								"QDRANT_URL": "http://127.0.0.1:6333",
+								"EMBEDDING_PROVIDER": "ollama",
+								"OLLAMA_URL": "http://localhost:11434"
+						}
+				}
+		}
+}
+```
+
+### Qdrant Cloud Configuration
+
+For either Cline or Claude Desktop, when using Qdrant Cloud, modify the env section:
+
+With Ollama:
+```json
+{
+		"env": {
+				"QDRANT_URL": "https://your-cluster-url.qdrant.tech",
+				"QDRANT_API_KEY": "your-qdrant-api-key",
+				"EMBEDDING_PROVIDER": "ollama",
+				"OLLAMA_URL": "http://localhost:11434"
+		}
+}
+```
+
+With OpenAI:
+```json
+{
+		"env": {
+				"QDRANT_URL": "https://your-cluster-url.qdrant.tech",
+				"QDRANT_API_KEY": "your-qdrant-api-key",
+				"EMBEDDING_PROVIDER": "openai",
+				"OPENAI_API_KEY": "your-openai-api-key"
+		}
 }
 ```
 
