@@ -32,8 +32,8 @@ npm install -g @qpd-v/mcp-server-ragdocs
 - Node.js 16 or higher
 - Qdrant (either local or cloud)
 - One of the following for embeddings:
-		- Ollama running locally (default, free)
-		- OpenAI API key (optional, paid)
+  - Ollama running locally (default, free)
+  - OpenAI API key (optional, paid)
 
 ## Qdrant Setup Options
 
@@ -75,9 +75,9 @@ macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
         "QDRANT_URL": "http://localhost:6333",
         "EMBEDDING_PROVIDER": "ollama",
         "OLLAMA_URL": "http://localhost:11434"
-						}
-				}
-		}
+      }
+    }
+  }
 }
 ```
 
@@ -92,27 +92,27 @@ macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
         "QDRANT_URL": "http://localhost:6333",
         "EMBEDDING_PROVIDER": "openai",
         "OPENAI_API_KEY": "your-openai-api-key"
-						}
-				}
-		}
+      }
+    }
+  }
 }
 ```
 
 3. Qdrant Cloud with OpenAI:
 ```json
 {
-		"mcpServers": {
-				"ragdocs": {
-						"command": "npx",
-						"args": ["-y", "@qpd-v/mcp-server-ragdocs"],
-						"env": {
-								"QDRANT_URL": "https://your-cluster-url.qdrant.tech",
-								"QDRANT_API_KEY": "your-qdrant-api-key",
-								"EMBEDDING_PROVIDER": "openai",
-								"OPENAI_API_KEY": "your-openai-api-key"
-						}
-				}
-		}
+  "mcpServers": {
+    "ragdocs": {
+      "command": "npx",
+      "args": ["-y", "@qpd-v/mcp-server-ragdocs"],
+      "env": {
+        "QDRANT_URL": "https://your-cluster-url.qdrant.tech",
+        "QDRANT_API_KEY": "your-qdrant-api-key",
+        "EMBEDDING_PROVIDER": "openai",
+        "OPENAI_API_KEY": "your-openai-api-key"
+      }
+    }
+  }
 }
 ```
 
@@ -127,8 +127,8 @@ macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 #### Embeddings Configuration
 - `EMBEDDING_PROVIDER` (optional): Choose between 'ollama' (default) or 'openai'
 - `EMBEDDING_MODEL` (optional):
-		- For Ollama: defaults to 'nomic-embed-text'
-		- For OpenAI: defaults to 'text-embedding-3-small'
+  - For Ollama: defaults to 'nomic-embed-text'
+  - For OpenAI: defaults to 'text-embedding-3-small'
 - `OLLAMA_URL` (optional): URL of your Ollama instance (defaults to http://localhost:11434)
 - `OPENAI_API_KEY` (required if using OpenAI): Your OpenAI API key
 
