@@ -38,3 +38,6 @@ coverage/
 # Local documentation files
 MCPguide.txt
 MCPspecification.txt
+
+# Local development folders
+mcp-server-qdrant/

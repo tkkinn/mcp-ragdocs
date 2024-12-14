@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that enables semantic search and retrieval
 
 ## Version
 
-Current version: 0.1.4
+Current version: 0.1.5
 
 ## Features
 
@@ -31,7 +31,9 @@ npm install -g @qpd-v/mcp-server-ragdocs
 
 - Node.js 16 or higher
 - Qdrant (either local or cloud)
-- Ollama running locally for embeddings
+- One of the following for embeddings:
+		- Ollama running locally (default, free)
+		- OpenAI API key (optional, paid)
 
 ## Qdrant Setup Options
 
@@ -60,7 +62,9 @@ Add this to your Claude Desktop configuration file:
 Windows: `%AppData%\Claude\claude_desktop_config.json`
 macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-For Local Qdrant:
+#### Example Configurations
+
+1. Local Setup with Ollama (Default):
 ```json
 {
   "mcpServers": {
@@ -68,15 +72,16 @@ For Local Qdrant:
       "command": "npx",
       "args": ["-y", "@qpd-v/mcp-server-ragdocs"],
       "env": {
-        "OLLAMA_URL": "http://localhost:11434",
-        "QDRANT_URL": "http://localhost:6333"
-      }
-    }
-  }
+        "QDRANT_URL": "http://localhost:6333",
+        "EMBEDDING_PROVIDER": "ollama",
+        "OLLAMA_URL": "http://localhost:11434"
+						}
+				}
+		}
 }
 ```
 
-For Qdrant Cloud:
+2. Local Setup with OpenAI:
 ```json
 {
   "mcpServers": {
@@ -84,22 +89,48 @@ For Qdrant Cloud:
       "command": "npx",
       "args": ["-y", "@qpd-v/mcp-server-ragdocs"],
       "env": {
-        "OLLAMA_URL": "http://localhost:11434",
-        "QDRANT_URL": "https://your-cluster-url.qdrant.tech",
-        "QDRANT_API_KEY": "your-api-key"
-      }
-    }
-  }
+        "QDRANT_URL": "http://localhost:6333",
+        "EMBEDDING_PROVIDER": "openai",
+        "OPENAI_API_KEY": "your-openai-api-key"
+						}
+				}
+		}
+}
+```
+
+3. Qdrant Cloud with OpenAI:
+```json
+{
+		"mcpServers": {
+				"ragdocs": {
+						"command": "npx",
+						"args": ["-y", "@qpd-v/mcp-server-ragdocs"],
+						"env": {
+								"QDRANT_URL": "https://your-cluster-url.qdrant.tech",
+								"QDRANT_API_KEY": "your-qdrant-api-key",
+								"EMBEDDING_PROVIDER": "openai",
+								"OPENAI_API_KEY": "your-openai-api-key"
+						}
+				}
+		}
 }
 ```
 
 ### Environment Variables
 
-- `OLLAMA_URL` (optional): URL of your Ollama instance (defaults to http://localhost:11434)
+#### Qdrant Configuration
 - `QDRANT_URL` (required): URL of your Qdrant instance
   - For local: http://localhost:6333
   - For cloud: https://your-cluster-url.qdrant.tech
 - `QDRANT_API_KEY` (required for cloud): Your Qdrant Cloud API key
+
+#### Embeddings Configuration
+- `EMBEDDING_PROVIDER` (optional): Choose between 'ollama' (default) or 'openai'
+- `EMBEDDING_MODEL` (optional):
+		- For Ollama: defaults to 'nomic-embed-text'
+		- For OpenAI: defaults to 'text-embedding-3-small'
+- `OLLAMA_URL` (optional): URL of your Ollama instance (defaults to http://localhost:11434)
+- `OPENAI_API_KEY` (required if using OpenAI): Your OpenAI API key
 
 ## Available Tools
 
