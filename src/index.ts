@@ -9,15 +9,32 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { chromium } from 'playwright';
-import OpenAI from 'openai';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 import crypto from 'crypto';
+import { EmbeddingService } from './embeddings.js';
 
 // Environment variables for configuration
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6334';
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+// Force using IP address to avoid hostname resolution issues
+const QDRANT_URL = 'http://127.0.0.1:6333';
 const COLLECTION_NAME = 'documentation';
+const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'ollama';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+interface QdrantCollectionConfig {
+		params: {
+				vectors: {
+						size: number;
+						distance: string;
+				};
+		};
+}
+
+interface QdrantCollectionInfo {
+		config: QdrantCollectionConfig;
+}
 
 interface DocumentChunk {
   text: string;
@@ -45,42 +62,86 @@ function isDocumentPayload(payload: unknown): payload is DocumentPayload {
 
 class RagDocsServer {
   private server: Server;
-  private qdrantClient: QdrantClient;
-  private openaiClient?: OpenAI;
+  private qdrantClient!: QdrantClient;
   private browser: any;
+  private embeddingService!: EmbeddingService;
+
+  private async testQdrantConnection() {
+    try {
+      const response = await this.qdrantClient.getCollections();
+      console.error('Successfully connected to Qdrant. Collections:', response.collections);
+    } catch (error) {
+      console.error('Failed initial Qdrant connection test:', error);
+      if (error instanceof Error) {
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Failed to establish initial connection to Qdrant server: ${error.message}`
+        );
+      }
+      throw new McpError(
+        ErrorCode.InternalError,
+        'Failed to establish initial connection to Qdrant server: Unknown error'
+      );
+    }
+  }
+
+  private async init() {
+    // Test connection with direct axios call
+    const axiosInstance = axios.create({
+      baseURL: 'http://127.0.0.1:6333',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    // Test connection
+    try {
+      const response = await axiosInstance.get('/collections');
+      console.error('Successfully connected to Qdrant:', response.data);
+    } catch (error) {
+      console.error('Failed to connect to Qdrant:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        'Failed to establish initial connection to Qdrant server'
+      );
+    }
+
+    // Initialize Qdrant client with minimal configuration
+    this.qdrantClient = new QdrantClient({
+      url: 'http://127.0.0.1:6333'
+    });
+
+    // Initialize embedding service from environment configuration
+    this.embeddingService = EmbeddingService.createFromConfig({
+      provider: EMBEDDING_PROVIDER as 'ollama' | 'openai',
+      model: EMBEDDING_MODEL,
+      apiKey: OPENAI_API_KEY
+    });
+
+    this.setupToolHandlers();
+  }
 
   constructor() {
     this.server = new Server(
       {
         name: 'mcp-ragdocs',
         version: '0.1.0',
-      },
+						},
       {
         capabilities: {
           tools: {},
-        },
-      }
-    );
-
-    // Initialize Qdrant client
-    this.qdrantClient = new QdrantClient({ url: QDRANT_URL });
-
-    // Initialize OpenAI client if API key is provided
-    if (OPENAI_API_KEY) {
-      this.openaiClient = new OpenAI({
-        apiKey: OPENAI_API_KEY,
-      });
-    }
-
-    this.setupToolHandlers();
-    
-    // Error handling
-    this.server.onerror = (error) => console.error('[MCP Error]', error);
-    process.on('SIGINT', async () => {
-      await this.cleanup();
-      process.exit(0);
-    });
-  }
+								},
+						}
+				);
+				
+				// Error handling
+				this.server.onerror = (error) => console.error('[MCP Error]', error);
+				process.on('SIGINT', async () => {
+						await this.cleanup();
+						process.exit(0);
+				});
+		}
 
   private async cleanup() {
     if (this.browser) {
@@ -96,44 +157,79 @@ class RagDocsServer {
   }
 
   private async getEmbeddings(text: string): Promise<number[]> {
-    if (!this.openaiClient) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'OpenAI API key not configured'
-      );
-    }
-
-    try {
-      const response = await this.openaiClient.embeddings.create({
-        model: 'text-embedding-ada-002',
-        input: text,
-      });
-      return response.data[0].embedding;
-    } catch (error) {
-      throw new McpError(
-        ErrorCode.InternalError,
-        `Failed to generate embeddings: ${error}`
-      );
-    }
+    return this.embeddingService.generateEmbeddings(text);
   }
 
   private async initCollection() {
     try {
-      const collections = await this.qdrantClient.getCollections();
-      const exists = collections.collections.some(c => c.name === COLLECTION_NAME);
+      // First ensure we can connect to Qdrant
+      await this.testQdrantConnection();
 
-      if (!exists) {
-        await this.qdrantClient.createCollection(COLLECTION_NAME, {
-          vectors: {
-            size: 1536, // OpenAI ada-002 embedding size
-            distance: 'Cosine',
-          },
-        });
+      const requiredVectorSize = this.embeddingService.getVectorSize();
+
+      try {
+								// Check if collection exists
+        const collections = await this.qdrantClient.getCollections();
+        const collection = collections.collections.find(c => c.name === COLLECTION_NAME);
+
+								if (!collection) {
+          console.error(`Creating new collection with vector size ${requiredVectorSize}`);
+          await this.qdrantClient.createCollection(COLLECTION_NAME, {
+            vectors: {
+              size: requiredVectorSize,
+              distance: 'Cosine',
+            },
+          });
+          return;
+        }
+
+								// Get collection info to check vector size
+								const collectionInfo = await this.qdrantClient.getCollection(COLLECTION_NAME) as QdrantCollectionInfo;
+        const currentVectorSize = collectionInfo.config?.params?.vectors?.size;
+        
+        if (!currentVectorSize) {
+          console.error('Could not determine current vector size, recreating collection...');
+          await this.recreateCollection(requiredVectorSize);
+          return;
+        }
+
+        if (currentVectorSize !== requiredVectorSize) {
+          console.error(`Vector size mismatch: collection=${currentVectorSize}, required=${requiredVectorSize}`);
+          await this.recreateCollection(requiredVectorSize);
+        }
+      } catch (error) {
+        console.error('Failed to initialize collection:', error);
+        throw new McpError(
+          ErrorCode.InternalError,
+          'Failed to initialize Qdrant collection. Please check server logs for details.'
+        );
       }
+    } catch (error) {
+      if (error instanceof McpError) {
+        throw error;
+      }
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Unexpected error initializing Qdrant: ${error}`
+      );
+    }
+  }
+
+  private async recreateCollection(vectorSize: number) {
+    try {
+      console.error('Recreating collection with new vector size...');
+      await this.qdrantClient.deleteCollection(COLLECTION_NAME);
+      await this.qdrantClient.createCollection(COLLECTION_NAME, {
+        vectors: {
+          size: vectorSize,
+          distance: 'Cosine',
+        },
+      });
+      console.error(`Collection recreated with new vector size ${vectorSize}`);
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
-        `Failed to initialize Qdrant collection: ${error}`
+        `Failed to recreate collection: ${error}`
       );
     }
   }
@@ -245,11 +341,45 @@ class RagDocsServer {
             properties: {},
           },
         },
+        {
+          name: 'test_ollama',
+          description: 'Test embeddings functionality',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              text: {
+                type: 'string',
+                description: 'Text to generate embeddings for',
+              },
+              provider: {
+                type: 'string',
+                description: 'Embedding provider to use (ollama or openai)',
+                enum: ['ollama', 'openai'],
+                default: 'ollama'
+              },
+              apiKey: {
+                type: 'string',
+                description: 'OpenAI API key (required if provider is openai)',
+              },
+              model: {
+                type: 'string',
+                description: 'Model to use for embeddings',
+              },
+            },
+            required: ['text'],
+          },
+        },
       ],
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      await this.initCollection();
+      switch (request.params.name) {
+        case 'add_documentation':
+        case 'search_documentation':
+        case 'list_sources':
+          await this.initCollection();
+          break;
+      }
 
       switch (request.params.name) {
         case 'add_documentation':
@@ -258,6 +388,8 @@ class RagDocsServer {
           return this.handleSearchDocumentation(request.params.arguments);
         case 'list_sources':
           return this.handleListSources();
+        case 'test_ollama':
+          return this.handleTestEmbeddings(request.params.arguments);
         default:
           throw new McpError(
             ErrorCode.MethodNotFound,
@@ -265,6 +397,50 @@ class RagDocsServer {
           );
       }
     });
+  }
+
+  private async handleTestEmbeddings(args: any) {
+    if (!args.text || typeof args.text !== 'string') {
+      throw new McpError(ErrorCode.InvalidParams, 'Text is required');
+    }
+
+    try {
+      // Create a new embedding service instance with the requested configuration
+      const tempEmbeddingService = EmbeddingService.createFromConfig({
+        provider: args.provider || 'ollama',
+        apiKey: args.apiKey,
+        model: args.model
+      });
+
+      const embedding = await tempEmbeddingService.generateEmbeddings(args.text);
+      const provider = args.provider || 'ollama';
+      const model = args.model || (provider === 'ollama' ? 'nomic-embed-text' : 'text-embedding-3-small');
+
+      // If test is successful, update the server's embedding service
+      this.embeddingService = tempEmbeddingService;
+      
+      // Reinitialize collection with new vector size
+      await this.initCollection();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Successfully configured ${provider} embeddings (${model}).\nVector size: ${embedding.length}\nQdrant collection updated to match new vector size.`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to test embeddings: ${error}`,
+          },
+        ],
+        isError: true,
+      };
+    }
   }
 
   private async handleAddDocumentation(args: any) {
@@ -394,9 +570,15 @@ class RagDocsServer {
   }
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('RAG Docs MCP server running on stdio');
+    try {
+      await this.init();
+      const transport = new StdioServerTransport();
+      await this.server.connect(transport);
+      console.error('RAG Docs MCP server running on stdio');
+    } catch (error) {
+      console.error('Failed to initialize server:', error);
+      process.exit(1);
+    }
   }
 }
 
