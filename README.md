@@ -1,4 +1,4 @@
-# mcp-server-ragdocs
+# MCP-Ragdocs
 
 A Model Context Protocol (MCP) server that enables semantic search and retrieval of documentation using a vector database (Qdrant). This server allows you to add documentation from URLs or local files and then search through them using natural language queries.
 
