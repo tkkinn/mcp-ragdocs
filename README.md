@@ -51,11 +51,13 @@ docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 
 ## Configuration
 
-The server can be used with both Cline and Claude Desktop. Configuration differs slightly between them:
+The server can be used with both Cline/Roo and Claude Desktop. Configuration differs slightly between them:
 
 ### Cline Configuration
 
-Add to your Cline settings file (`%AppData%\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\cline_mcp_settings.json`):
+Add to your Cline settings file (`%AppData%\Roaming\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json`)
+AND/OR
+Add to your Roo-Code settings file (`%AppData%\Roaming\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\cline_mcp_settings.json`):
 
 1. Using npm global install (recommended):
 ```json
