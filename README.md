@@ -2,6 +2,53 @@
 
 A Model Context Protocol (MCP) server that enables semantic search and retrieval of documentation using a vector database (Qdrant). This server allows you to add documentation from URLs or local files and then search through them using natural language queries.
 
+## Quick Install Guide
+
+1. Install the package globally:
+   ```bash
+   npm install -g @qpd-v/mcp-server-ragdocs
+   ```
+
+2. Start Qdrant (using Docker):
+   ```bash
+   docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+   ```
+
+3. Ensure Ollama is running with the default embedding model:
+   ```bash
+   ollama pull nomic-embed-text
+   ```
+
+4. Add to your configuration file:
+   - For Cline: `%AppData%\Roaming\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json`
+   - For Roo-Code: `%AppData%\Roaming\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\cline_mcp_settings.json`
+   - For Claude Desktop: `%AppData%\Claude\claude_desktop_config.json`
+
+   ```json
+   {
+     "mcpServers": {
+       "ragdocs": {
+         "command": "node",
+         "args": ["C:/Users/YOUR_USERNAME/AppData/Roaming/npm/node_modules/@qpd-v/mcp-server-ragdocs/build/index.js"],
+         "env": {
+           "QDRANT_URL": "http://127.0.0.1:6333",
+           "EMBEDDING_PROVIDER": "ollama",
+           "OLLAMA_URL": "http://localhost:11434"
+         }
+       }
+     }
+   }
+   ```
+
+5. Verify installation:
+   ```bash
+   # Check Qdrant is running
+   curl http://localhost:6333/collections
+   
+   # Check Ollama has the model
+   ollama list | grep nomic-embed-text
+   ```
+
 ## Version
 
 Current version: 0.1.6
@@ -279,6 +326,40 @@ npm start
 ## License
 
 MIT
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Qdrant Connection Error**
+   ```
+   Error: Failed to connect to Qdrant at http://localhost:6333
+   ```
+   - Check if Docker is running
+   - Verify Qdrant container is running: `docker ps | grep qdrant`
+   - Try restarting the container
+
+2. **Ollama Model Missing**
+   ```
+   Error: Model nomic-embed-text not found
+   ```
+   - Run: `ollama pull nomic-embed-text`
+   - Verify model is installed: `ollama list`
+
+3. **Configuration Path Issues**
+   - Windows: Replace `YOUR_USERNAME` with your actual Windows username
+   - Check file permissions
+   - Verify the paths exist
+
+4. **npm Global Install Issues**
+   - Try installing with admin privileges
+   - Check npm is in PATH: `npm -v`
+   - Verify global installation: `npm list -g @qpd-v/mcp-server-ragdocs`
+
+For other issues, please check:
+- Docker logs: `docker logs $(docker ps -q --filter ancestor=qdrant/qdrant)`
+- Ollama status: `ollama list`
+- Node.js version: `node -v` (should be 16 or higher)
 
 ## Contributing
 
