@@ -42,8 +42,11 @@ export class OpenAIProvider implements EmbeddingProvider {
   private client: OpenAI;
   private model: string;
 
-  constructor(apiKey: string, model: string = 'text-embedding-3-small') {
-    this.client = new OpenAI({ apiKey });
+  constructor(apiKey: string, model: string = 'text-embedding-3-small', baseURL?: string) {
+    this.client = new OpenAI({ 
+      apiKey,
+      baseURL: baseURL || undefined
+    });
     this.model = model;
   }
 
@@ -91,6 +94,7 @@ export class EmbeddingService {
     provider: 'ollama' | 'openai';
     apiKey?: string;
     model?: string;
+    baseURL?: string;
   }): EmbeddingService {
     switch (config.provider) {
       case 'ollama':
@@ -102,7 +106,7 @@ export class EmbeddingService {
             'OpenAI API key is required'
           );
         }
-        return new EmbeddingService(new OpenAIProvider(config.apiKey, config.model));
+        return new EmbeddingService(new OpenAIProvider(config.apiKey, config.model, config.baseURL));
       default:
         throw new McpError(
           ErrorCode.InvalidParams,

@@ -22,6 +22,7 @@ const COLLECTION_NAME = 'documentation';
 const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'ollama';
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
 
 interface QdrantCollectionConfig {
 		params: {
@@ -116,7 +117,8 @@ class RagDocsServer {
     this.embeddingService = EmbeddingService.createFromConfig({
       provider: EMBEDDING_PROVIDER as 'ollama' | 'openai',
       model: EMBEDDING_MODEL,
-      apiKey: OPENAI_API_KEY
+      apiKey: OPENAI_API_KEY,
+      baseURL: OPENAI_BASE_URL
     });
 
     this.setupToolHandlers();
@@ -365,6 +367,10 @@ class RagDocsServer {
                 type: 'string',
                 description: 'Model to use for embeddings',
               },
+              baseURL: {
+                type: 'string',
+                description: 'Base URL for OpenAI API (optional, for proxy services)',
+              },
             },
             required: ['text'],
           },
@@ -409,7 +415,8 @@ class RagDocsServer {
       const tempEmbeddingService = EmbeddingService.createFromConfig({
         provider: args.provider || 'ollama',
         apiKey: args.apiKey,
-        model: args.model
+        model: args.model,
+        baseURL: args.baseURL
       });
 
       const embedding = await tempEmbeddingService.generateEmbeddings(args.text);

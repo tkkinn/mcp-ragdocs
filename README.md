@@ -51,7 +51,7 @@ A Model Context Protocol (MCP) server that enables semantic search and retrieval
 
 ## Version
 
-Current version: 0.1.6
+Current version: 0.1.7
 
 ## Features
 
@@ -140,6 +140,24 @@ For OpenAI instead of Ollama:
 }
 ```
 
+For OpenAI with a proxy service:
+```json
+{
+		"mcpServers": {
+				"ragdocs": {
+						"command": "node",
+      "args": ["C:/Users/YOUR_USERNAME/AppData/Roaming/npm/node_modules/@qpd-v/mcp-server-ragdocs/build/index.js"],
+      "env": {
+        "QDRANT_URL": "http://127.0.0.1:6333",
+        "EMBEDDING_PROVIDER": "openai",
+        "OPENAI_API_KEY": "your-openai-api-key",
+        "OPENAI_BASE_URL": "https://your-proxy-service.example.com/v1"
+      }
+    }
+  }
+}
+```
+
 2. Using local development setup:
 ```json
 {
@@ -201,6 +219,26 @@ Windows Setup with OpenAI:
 }
 ```
 
+Windows Setup with OpenAI proxy:
+```json
+{
+		"mcpServers": {
+				"ragdocs": {
+						"command": "C:\\Program Files\\nodejs\\node.exe",
+						"args": [
+								"C:\\Users\\YOUR_USERNAME\\AppData\\Roaming\\npm\\node_modules\\@qpd-v/mcp-server-ragdocs\\build\\index.js"
+						],
+						"env": {
+								"QDRANT_URL": "http://127.0.0.1:6333",
+								"EMBEDDING_PROVIDER": "openai",
+								"OPENAI_API_KEY": "your-openai-api-key",
+								"OPENAI_BASE_URL": "https://your-proxy-service.example.com/v1"
+						}
+				}
+		}
+}
+```
+
 2. macOS Setup with Ollama:
 ```json
 {
@@ -248,6 +286,19 @@ With OpenAI:
 }
 ```
 
+With OpenAI proxy:
+```json
+{
+		"env": {
+				"QDRANT_URL": "https://your-cluster-url.qdrant.tech",
+				"QDRANT_API_KEY": "your-qdrant-api-key",
+				"EMBEDDING_PROVIDER": "openai",
+				"OPENAI_API_KEY": "your-openai-api-key",
+				"OPENAI_BASE_URL": "https://your-proxy-service.example.com/v1"
+		}
+}
+```
+
 ### Environment Variables
 
 #### Qdrant Configuration
@@ -263,6 +314,7 @@ With OpenAI:
   - For OpenAI: defaults to 'text-embedding-3-small'
 - `OLLAMA_URL` (optional): URL of your Ollama instance (defaults to http://localhost:11434)
 - `OPENAI_API_KEY` (required if using OpenAI): Your OpenAI API key
+- `OPENAI_BASE_URL` (optional): Base URL for OpenAI API when using proxy services
 
 ## Available Tools
 
@@ -355,6 +407,11 @@ MIT
    - Try installing with admin privileges
    - Check npm is in PATH: `npm -v`
    - Verify global installation: `npm list -g @qpd-v/mcp-server-ragdocs`
+
+5. **OpenAI API Proxy Issues**
+   - Ensure the base URL is properly formatted (e.g., https://your-proxy-service.example.com/v1)
+   - Verify the proxy service is compatible with OpenAI's API format
+   - Check if your API key is valid for the proxy service
 
 For other issues, please check:
 - Docker logs: `docker logs $(docker ps -q --filter ancestor=qdrant/qdrant)`
